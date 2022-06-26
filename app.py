@@ -8,7 +8,7 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 debug = DebugToolbarExtension(app)
 
-responses = []
+RESPONSES_KEY = "responses"
 survey = satisfaction_survey
 
 
@@ -18,6 +18,7 @@ def home_page():
 
     title = survey.title
     instructions = survey.instructions
+    session[RESPONSES_KEY] = []
 
     return render_template('home.html', title=title, instructions=instructions)
 
@@ -25,6 +26,7 @@ def home_page():
 @app.route('/questions/<int:ques_num>')
 def show_question(ques_num):
     """Displays current question"""
+    responses = session.get(RESPONSES_KEY)
 
     # trying to access questions out of order
     if (len(responses) != ques_num):
@@ -40,14 +42,15 @@ def show_question(ques_num):
     return render_template('questions.html', curr_question=curr_question, ques_num=ques_num)
 
 
-@app.route('/answer')
+@app.route('/answer', methods=["POST"])
 def receive_answers():
     """Collects answers and redirects to next question or thank you page"""
     
     #retrieves answer and adds it too the response list
-    answer = request.args['answer']
-    responses.append(answer)
-    print(respones)
+    choice = request.form['choice']
+    responses = session[RESPONSES_KEY]
+    responses.append(choice)
+    session[RESPONSES_KEY] = responses
     
     #redirects to next question or completes survey
     if (len(responses) == len(survey.questions)):
@@ -60,5 +63,4 @@ def receive_answers():
 @app.route('/thank-you')
 def complete_survey():
     """Thanks user for completing survey"""
-    
     return render_template('thank-you.html')
